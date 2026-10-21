@@ -12,10 +12,6 @@ A complete Retrieval-Augmented Generation (RAG) system that allows users to uplo
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [API Documentation](#api-documentation)
-- [Technical Details](#technical-details)
 - [Future Enhancements](#future-enhancements)
 
 ## Overview
@@ -105,24 +101,17 @@ ollama list
 ### Step 3: Clone/Download Project
 
 ```bash
-mkdir rag-document-qa
-cd rag-document-qa
+mkdir rag-document-qa-system
+cd rag-document-qa-system
 ```
 
 Place the following files in the directory:
 - `rag_system.py` - Core RAG logic
 - `app.py` - Flask API server
-- `index.html` - Frontend interface
-- `test_ollama.py` - Connection testing utility
-- `requirements.txt` - Python dependencies
+- `RAG_chat_interface.html` - Frontend interface
 
 ### Step 4: Install Python Dependencies
 
-```bash
-pip install -r requirements.txt
-```
-
-Or manually:
 ```bash
 pip install chromadb==0.4.22 pypdf==3.0.0 flask==3.0.0 flask-cors==4.0.0 requests==2.31.0
 ```
@@ -170,26 +159,23 @@ Server running at: http://localhost:5000
 python -m http.server 8000
 ```
 
-Then open your browser to: `http://localhost:8000/index.html`
+Then open your browser to: `http://localhost:8000/RAG_chat_interface.html`
 
 ### Using the Interface
 
 1. **Upload Document**: Click or drag-and-drop a PDF/TXT file
 2. **Wait for Processing**: System will chunk and index the document
 3. **Ask Questions**: Type questions in the chat input
-4. **View Context**: Click context chips to see which chunks were used
 
 ## Project Structure
 
 ```
 rag-document-qa/
-├── rag_system.py         # Core RAG implementation
-├── app.py                # Flask REST API
-├── index.html            # Web interface
-├── test_ollama.py        # Testing utility
-├── requirements.txt      # Python dependencies
-├── uploads/              # Uploaded documents (created at runtime)
-└── README.md            # This file
+├── rag_system.py           # Core RAG implementation
+├── app.py                  # Flask REST API
+├── RAG_chat_interface.html # Web interface
+├── uploads/                # Uploaded documents (created at runtime)
+└── README.md               # This file
 ```
 
 ## How It Works
@@ -235,180 +221,6 @@ This approach is:
 - Lightweight (no ML models for retrieval)
 - Effective for keyword-based search
 
-## Testing
-
-### Automated Testing
-
-Run the test script to verify Ollama connectivity:
-```bash
-python test_ollama.py
-```
-
-This checks:
-1. Ollama server is running
-2. Models are available
-3. Text generation works
-4. RAG-style prompts work
-
-### Manual Testing
-
-#### Test 1: Basic Information Retrieval
-- Upload a document (e.g., your CV, technical manual)
-- Ask: "What is this document about?"
-- Expected: Summary based on document content
-
-#### Test 2: Specific Information
-- Ask: "What are the key points mentioned?"
-- Expected: Specific details extracted from the document
-
-#### Test 3: Hallucination Prevention (Critical)
-- Ask: "What is the weather today?"
-- Expected: "I cannot find this information in the provided document."
-
-#### Test 4: Context Viewing
-- Click on "Context 1", "Context 2", "Context 3" chips
-- Verify the displayed chunks are relevant to your question
-
-## Troubleshooting
-
-### Issue: "Cannot connect to Ollama"
-**Solution**: Make sure Ollama is running
-```bash
-ollama serve
-```
-
-### Issue: "CUDA error" or "out of memory"
-**Solution**: Run Ollama in CPU mode
-```bash
-CUDA_VISIBLE_DEVICES="" ollama serve
-```
-
-### Issue: Slow responses
-**Solution**: 
-- Use a smaller model (gemma3:270m instead of mistral)
-- Ensure Ollama is in CPU mode if GPU is causing issues
-- Local models typically take 10-30 seconds per query
-
-### Issue: "No documents have been indexed"
-**Solution**: Upload a document before asking questions
-
-### Issue: CORS errors in browser
-**Solution**: 
-- Make sure Flask server is running with CORS enabled (already configured)
-- Serve frontend through http.server, not file:// protocol
-
-### Issue: Poor answer quality
-**Solutions**:
-- Use a more capable model (mistral instead of gemma3:270m)
-- Ensure your question relates to document content
-- Try rephrasing your question with keywords from the document
-
-## API Documentation
-
-### POST /api/upload
-Upload and ingest a document.
-
-**Request:**
-- Content-Type: multipart/form-data
-- Body: file (PDF or TXT)
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Document 'example.pdf' ingested successfully",
-  "filename": "example.pdf"
-}
-```
-
-### POST /api/query
-Query the RAG system.
-
-**Request:**
-```json
-{
-  "question": "What is this document about?"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "answer": "This document discusses...",
-  "context": [
-    "Chunk 1 text...",
-    "Chunk 2 text...",
-    "Chunk 3 text..."
-  ]
-}
-```
-
-### POST /api/reset
-Clear all documents and reset the system.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "System reset successfully"
-}
-```
-
-### GET /api/health
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "message": "RAG server is running"
-}
-```
-
-## Technical Details
-
-### Dependencies
-
-- **chromadb**: Vector database (used for storage, not embeddings)
-- **pypdf**: PDF text extraction
-- **flask**: Web server and REST API
-- **flask-cors**: Cross-origin resource sharing
-- **requests**: HTTP client for Ollama API
-
-### Configuration
-
-**Model Selection** (in app.py):
-```python
-rag = RAGSystem(model_name="gemma3:270m")
-```
-
-**Chunk Size** (in rag_system.py):
-```python
-chunk_size = 500  # characters
-overlap = 50      # character overlap between chunks
-```
-
-**Retrieval Parameters** (in rag_system.py):
-```python
-top_k = 3  # number of chunks to retrieve
-```
-
-**Generation Parameters** (in rag_system.py):
-```python
-"options": {
-    "temperature": 0.7,
-    "num_predict": 500
-}
-```
-
-### Performance Considerations
-
-- **Document Size**: Works best with documents under 100 pages
-- **Chunk Size**: 500 characters balances context and precision
-- **Top-K**: 3 chunks provides sufficient context without overwhelming the LLM
-- **Response Time**: 10-30 seconds per query depending on model and hardware
-
 ## Future Enhancements
 
 ### Potential Improvements
@@ -446,14 +258,6 @@ This project demonstrates the complete RAG pipeline used in 90% of enterprise Ge
 ## License
 
 This project is provided as-is for educational and commercial use.
-
-## Support
-
-For issues or questions:
-1. Check the Troubleshooting section
-2. Verify Ollama is running: `ollama list`
-3. Test connectivity: `python test_ollama.py`
-4. Review Flask logs for error messages
 
 ## Acknowledgments
 
